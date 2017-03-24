@@ -112,17 +112,17 @@ namespace Terraria.ModLoader.UI
 			{
 				default:
 					return base.CompareTo(obj);
-				case SortModes.DisplayNameAtoZ:
+				case SortMode.DisplayNameAtoZ:
 					return string.Compare(this.displayname, item?.displayname, StringComparison.Ordinal);
-				case SortModes.DisplayNameZtoA:
+				case SortMode.DisplayNameZtoA:
 					return -1 * string.Compare(this.displayname, item?.displayname, StringComparison.Ordinal);
-				case SortModes.DownloadsAscending:
+				case SortMode.DownloadsAscending:
 					return this.downloads.CompareTo(item?.downloads);
-				case SortModes.DownloadsDescending:
+				case SortMode.DownloadsDescending:
 					return -1 * this.downloads.CompareTo(item?.downloads);
-				case SortModes.RecentlyUpdated:
+				case SortMode.RecentlyUpdated:
 					return -1 * string.Compare(this.timeStamp, item?.timeStamp, StringComparison.Ordinal);
-				case SortModes.Hot:
+				case SortMode.Hot:
 					return -1 * this.hot.CompareTo(item?.hot);
 			}
 		}
