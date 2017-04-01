@@ -48,7 +48,8 @@ namespace Terraria.ModLoader
 		private static DelegateCreateDust[] HookCreateDust;
 		private delegate void DelegateDropCritterChance(int i, int j, int type, ref int wormChance, ref int grassHopperChance, ref int jungleGrubChance);
 		private static DelegateDropCritterChance[] HookDropCritterChance;
-		private static Func<int, int, int, bool>[] HookDrop;
+		private static Func<int, int, int, TileStyle, bool>[] HookDrop;
+		private static Func<int, int, int, bool>[] HookDropLegacy;
 		private delegate bool DelegateCanKillTile(int i, int j, int type, ref bool blockDamaged);
 		private static DelegateCanKillTile[] HookCanKillTile;
 		private delegate void DelegateKillTile(int i, int j, int type, ref bool fail, ref bool effectOnly, ref bool noItem);
@@ -213,6 +214,7 @@ namespace Terraria.ModLoader
 			Array.Resize(ref TileID.Sets.Leaves, nextTile);
 			Array.Resize(ref TileID.Sets.GeneralPlacementTiles, nextTile);
 			Array.Resize(ref TileID.Sets.CanBeClearedDuringGeneration, nextTile);
+			Array.Resize(ref TileID.Sets.CanBeClearedDuringOreRunner, nextTile);
 			Array.Resize(ref TileID.Sets.Corrupt, nextTile);
 			Array.Resize(ref TileID.Sets.Hallow, nextTile);
 			Array.Resize(ref TileID.Sets.Crimson, nextTile);
@@ -248,6 +250,7 @@ namespace Terraria.ModLoader
 			ModLoader.BuildGlobalHook(ref HookCreateDust, globalTiles, g => g.CreateDust);
 			ModLoader.BuildGlobalHook(ref HookDropCritterChance, globalTiles, g => g.DropCritterChance);
 			ModLoader.BuildGlobalHook(ref HookDrop, globalTiles, g => g.Drop);
+			ModLoader.BuildGlobalHook(ref HookDropLegacy, globalTiles, g => g.Drop);
 			ModLoader.BuildGlobalHook(ref HookCanKillTile, globalTiles, g => g.CanKillTile);
 			ModLoader.BuildGlobalHook(ref HookKillTile, globalTiles, g => g.KillTile);
 			ModLoader.BuildGlobalHook(ref HookCanExplode, globalTiles, g => g.CanExplode);
@@ -587,9 +590,16 @@ namespace Terraria.ModLoader
 		//in Terraria.WorldGen.KillTile before if statements checking num49 and num50
 		//  add bool vanillaDrop = TileLoader.Drop(i, j, tile.type);
 		//  add "vanillaDrop && " to beginning of these if statements
-		public static bool Drop(int i, int j, int type)
+		public static bool Drop(int i, int j, int type, TileStyle tileStyle)
 		{
 			foreach (var hook in HookDrop)
+			{
+				if (!hook(i, j, type, tileStyle))
+				{
+					return false;
+				}
+			}
+			foreach (var hook in HookDropLegacy)
 			{
 				if (!hook(i, j, type))
 				{
@@ -865,7 +875,7 @@ namespace Terraria.ModLoader
 		{
 			Tile target = Main.tile[Player.tileTargetX, Player.tileTargetY];
 			ModTile modTile = GetTile(target.type);
-			damage += modTile != null ? (int) (minePower/modTile.mineResist) : minePower;
+			damage += modTile != null ? (int)(minePower / modTile.mineResist) : minePower;
 		}
 		//in Terraria.Player.ItemCheck at end of else if chain setting num to 0 add
 		//  else { TileLoader.PickPowerCheck(tile, pickPower, ref num); }
@@ -1187,7 +1197,7 @@ namespace Terraria.ModLoader
 		public static void PlaceInWorld(int i, int j, Item item)
 		{
 			int type = item.createTile;
-			if(type < 0)
+			if (type < 0)
 				return;
 
 			foreach (var hook in HookPlaceInWorld)

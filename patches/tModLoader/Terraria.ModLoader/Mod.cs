@@ -61,7 +61,8 @@ namespace Terraria.ModLoader
 		internal readonly IList<ModRecipe> recipes = new List<ModRecipe>();
 		internal readonly IDictionary<string, ModItem> items = new Dictionary<string, ModItem>();
 		internal readonly IDictionary<string, GlobalItem> globalItems = new Dictionary<string, GlobalItem>();
-		internal readonly IDictionary<string, EquipTexture> equipTextures = new Dictionary<string, EquipTexture>();
+		internal readonly IDictionary<Tuple<string, EquipType>, EquipTexture> equipTextures = new Dictionary<Tuple<string, EquipType>, EquipTexture>();
+		internal readonly IDictionary<string, EquipTexture> equipTexturesLegacy = new Dictionary<string, EquipTexture>();
 		internal readonly IDictionary<string, ModDust> dusts = new Dictionary<string, ModDust>();
 		internal readonly IDictionary<string, ModTile> tiles = new Dictionary<string, ModTile>();
 		internal readonly IDictionary<string, GlobalTile> globalTiles = new Dictionary<string, GlobalTile>();
@@ -450,6 +451,16 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
+		/// Same as the other GetItem, but assumes that the class name and internal name are the same.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public T GetItem<T>() where T : ModItem
+		{
+			return (T)GetItem(typeof(T).Name);
+		}
+
+		/// <summary>
 		/// Gets the internal ID / type of the ModItem corresponding to the name. Returns 0 if no ModItem with the given name is found.
 		/// </summary>
 		/// <param name="name">The name.</param>
@@ -526,6 +537,16 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
+		/// Same as the other GetGlobalItem, but assumes that the class name and internal name are the same.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public T GetGlobalItem<T>() where T : GlobalItem
+		{
+			return (T)GetGlobalItem(typeof(T).Name);
+		}
+
+		/// <summary>
 		/// Adds the given type of item information storage to the game, using the provided name.
 		/// </summary>
 		/// <param name="name">The name.</param>
@@ -576,7 +597,8 @@ namespace Terraria.ModLoader
 			equipTexture.Slot = slot;
 			equipTexture.item = item;
 			EquipLoader.equipTextures[type][slot] = equipTexture;
-			equipTextures[name] = equipTexture;
+			equipTextures[new Tuple<string, EquipType>(name, type)] = equipTexture;
+			equipTexturesLegacy[name] = equipTexture;
 			ModLoader.GetTexture(texture);
 			if (type == EquipType.Body)
 			{
@@ -593,15 +615,15 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
-		/// Gets the EquipTexture instance corresponding to the name. Returns null if no EquipTexture with the given name is found.
+		/// Obsolete: This method doesn't work completely.
 		/// </summary>
 		/// <param name="name">The name.</param>
-		/// <returns></returns>
+		[method: Obsolete("This method doesn't have enough information to actually work. Use GetEquipTexture(string name, EquipType type) instead.")]
 		public EquipTexture GetEquipTexture(string name)
 		{
-			if (equipTextures.ContainsKey(name))
+			if (equipTexturesLegacy.ContainsKey(name))
 			{
-				return equipTextures[name];
+				return equipTexturesLegacy[name];
 			}
 			else
 			{
@@ -610,10 +632,28 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
-		/// Gets the slot/ID of the equipment texture corresponding to the given name. Returns -1 if no EquipTexture with the given name is found.
+		/// Gets the EquipTexture instance corresponding to the name and EquipType. Returns null if no EquipTexture with the given name and EquipType is found.
 		/// </summary>
 		/// <param name="name">The name.</param>
+		/// <param name="type">The type.</param>
 		/// <returns></returns>
+		public EquipTexture GetEquipTexture(string name, EquipType type)
+		{
+			if (equipTextures.ContainsKey(new Tuple<string, EquipType>(name, type)))
+			{
+				return equipTextures[new Tuple<string, EquipType>(name, type)];
+			}
+			else
+			{
+				return null;
+			}
+		}
+
+		/// <summary>
+		/// Obsolete: This method doesn't work completely.
+		/// </summary>
+		/// <param name="name">The name.</param>
+		[method: Obsolete("This method doesn't have enough information to actually work. Use GetEquipSlot(string name, EquipType type) instead.")]
 		public int GetEquipSlot(string name)
 		{
 			EquipTexture texture = GetEquipTexture(name);
@@ -625,13 +665,38 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
+		/// Gets the slot/ID of the equipment texture corresponding to the given name. Returns -1 if no EquipTexture with the given name is found.
+		/// </summary>
+		/// <param name="name">The name.</param>
+		/// <returns></returns>
+		public int GetEquipSlot(string name, EquipType type)
+		{
+			EquipTexture texture = GetEquipTexture(name, type);
+			if (texture == null)
+			{
+				return -1;
+			}
+			return texture.Slot;
+		}
+
+		/// <summary>
+		/// Obsolete: This method doesn't work completely.
+		/// </summary>
+		/// <param name="name">The name.</param>
+		[method: Obsolete("This method doesn't have enough information to actually work. Use GetAccessorySlot(string name, EquipType type) instead.")]
+		public sbyte GetAccessorySlot(string name)
+		{
+			return (sbyte)GetEquipSlot(name);
+		}
+
+		/// <summary>
 		/// Same as GetEquipSlot, except returns the number as an sbyte (signed byte) for your convenience.
 		/// </summary>
 		/// <param name="name">The name.</param>
 		/// <returns></returns>
-		public sbyte GetAccessorySlot(string name)
+		public sbyte GetAccessorySlot(string name, EquipType type)
 		{
-			return (sbyte)GetEquipSlot(name);
+			return (sbyte)GetEquipSlot(name, type);
 		}
 
 		/// <summary>
@@ -734,6 +799,16 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
+		/// Same as the other GetDust, but assumes that the class name and internal name are the same.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public T GetDust<T>() where T : ModDust
+		{
+			return (T)GetDust(typeof(T).Name);
+		}
+
+		/// <summary>
 		/// Gets the type of the ModDust of this mod with the given name. Returns 0 if no ModDust with the given name is found.
 		/// </summary>
 		/// <param name="name">The name.</param>
@@ -809,6 +884,16 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
+		/// Same as the other GetTile, but assumes that the class name and internal name are the same.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public T GetTile<T>() where T : ModTile
+		{
+			return (T)GetTile(typeof(T).Name);
+		}
+
+		/// <summary>
 		/// Gets the type of the ModTile of this mod with the given name. Returns 0 if no ModTile with the given name is found.
 		/// </summary>
 		/// <param name="name">The name.</param>
@@ -861,6 +946,16 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		/// <summary>
+		/// Same as the other GetGlobalTile, but assumes that the class name and internal name are the same.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public T GetGlobalTile<T>() where T : GlobalTile
+		{
+			return (T)GetGlobalTile(typeof(T).Name);
 		}
 
 		private void AutoloadTile(Type type)
@@ -918,6 +1013,16 @@ namespace Terraria.ModLoader
 		}
 
 		/// <summary>
+		/// Same as the other GetTileEntity, but assumes that the class name and internal name are the same.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public T GetTileEntity<T>() where T : ModTileEntity
+		{
+			return (T)GetTileEntity(typeof(T).Name);
+		}
+
+		/// <summary>
 		/// Gets the type of the ModTileEntity of this mod with the given name. Returns -1 if no ModTileEntity with the given name is found.
 		/// </summary>
 		/// <param name="name">The name.</param>
@@ -930,6 +1035,16 @@ namespace Terraria.ModLoader
 				return -1;
 			}
 			return tileEntity.Type;
+		}
+
+		/// <summary>
+		/// Same as the other TileEntityType, but assumes that the class name and internal name are the same.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public int TileEntityType<T>() where T : ModTileEntity
+		{
+			return TileEntityType(typeof(T).Name);
 		}
 
 		private void AutoloadTileEntity(Type type)
@@ -975,6 +1090,11 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		public T GetWall<T>() where T : ModWall
+		{
+			return (T)GetWall(typeof(T).Name);
 		}
 
 		/// <summary>
@@ -1030,6 +1150,11 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		public T GetGlobalWall<T>() where T : GlobalWall
+		{
+			return (T)GetGlobalWall(typeof(T).Name);
 		}
 
 		private void AutoloadWall(Type type)
@@ -1095,6 +1220,11 @@ namespace Terraria.ModLoader
 			}
 		}
 
+		public T GetProjectile<T>() where T : ModProjectile
+		{
+			return (T)GetProjectile(typeof(T).Name);
+		}
+
 		/// <summary>
 		/// Gets the type of the ModProjectile of this mod with the given name. Returns 0 if no ModProjectile with the given name is found.
 		/// </summary>
@@ -1149,6 +1279,11 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		public T GetGlobalProjectile<T>() where T : GlobalProjectile
+		{
+			return (T)GetGlobalProjectile(typeof(T).Name);
 		}
 
 		/// <summary>
@@ -1238,6 +1373,11 @@ namespace Terraria.ModLoader
 			}
 		}
 
+		public T GetNPC<T>() where T : ModNPC
+		{
+			return (T)GetNPC(typeof(T).Name);
+		}
+
 		/// <summary>
 		/// Gets the type of the ModNPC of this mod with the given name. Returns 0 if no ModNPC with the given name is found.
 		/// </summary>
@@ -1291,6 +1431,11 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		public T GetGlobalNPC<T>() where T : GlobalNPC
+		{
+			return (T)GetGlobalNPC(typeof(T).Name);
 		}
 
 		/// <summary>
@@ -1458,6 +1603,11 @@ namespace Terraria.ModLoader
 			}
 		}
 
+		public T GetBuff<T>() where T : ModBuff
+		{
+			return (T)GetBuff(typeof(T).Name);
+		}
+
 		/// <summary>
 		/// Gets the type of the ModBuff of this mod corresponding to the given name. Returns 0 if no ModBuff with the given name is found.
 		/// </summary>
@@ -1511,6 +1661,11 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		public T GetGlobalBuff<T>() where T : GlobalBuff
+		{
+			return (T)GetGlobalBuff(typeof(T).Name);
 		}
 
 		private void AutoloadBuff(Type type)
@@ -1631,6 +1786,11 @@ namespace Terraria.ModLoader
 			}
 		}
 
+		public T GetMount<T>() where T : ModMountData
+		{
+			return (T)GetMount(typeof(T).Name);
+		}
+
 		/// <summary>
 		/// Gets the ID of the ModMountData instance corresponding to the given name. Returns 0 if no ModMountData has the given name.
 		/// </summary>
@@ -1739,6 +1899,11 @@ namespace Terraria.ModLoader
 			}
 		}
 
+		public T GetUgBgStyle<T>() where T : ModUgBgStyle
+		{
+			return (T)GetUgBgStyle(typeof(T).Name);
+		}
+
 		private void AutoloadUgBgStyle(Type type)
 		{
 			ModUgBgStyle ugBgStyle = (ModUgBgStyle)Activator.CreateInstance(type);
@@ -1782,6 +1947,11 @@ namespace Terraria.ModLoader
 			}
 		}
 
+		public T GetSurfaceBgStyle<T>() where T : ModSurfaceBgStyle
+		{
+			return (T)GetSurfaceBgStyle(typeof(T).Name);
+		}
+
 		/// <summary>
 		/// Returns the Slot of the surface background style corresponding to the given name.
 		/// </summary>
@@ -1791,6 +1961,11 @@ namespace Terraria.ModLoader
 		{
 			ModSurfaceBgStyle style = GetSurfaceBgStyle(name);
 			return style == null ? -1 : style.Slot;
+		}
+
+		public int GetSurfaceBgStyleSlot<T>() where T : ModSurfaceBgStyle
+		{
+			return GetSurfaceBgStyleSlot(typeof(T).Name);
 		}
 
 		private void AutoloadSurfaceBgStyle(Type type)
@@ -1833,6 +2008,12 @@ namespace Terraria.ModLoader
 				return null;
 			}
 		}
+
+		public T GetGlobalBgStyle<T>() where T : GlobalBgStyle
+		{
+			return (T)GetGlobalBgStyle(typeof(T).Name);
+		}
+
 
 		private void AutoloadGlobalBgStyle(Type type)
 		{
@@ -1879,6 +2060,11 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		public T GetWaterStyle<T>() where T : ModWaterStyle
+		{
+			return (T)GetWaterStyle(typeof(T).Name);
 		}
 
 		private void AutoloadWaterStyle(Type type)
@@ -1928,6 +2114,11 @@ namespace Terraria.ModLoader
 			}
 		}
 
+		public T GetWaterfallStyle<T>() where T : ModWaterfallStyle
+		{
+			return (T)GetWaterfallStyle(typeof(T).Name);
+		}
+
 		/// <summary>
 		/// Returns the waterfall style corresponding to the given name.
 		/// </summary>
@@ -1937,6 +2128,11 @@ namespace Terraria.ModLoader
 		{
 			ModWaterfallStyle style = GetWaterfallStyle(name);
 			return style == null ? -1 : style.Type;
+		}
+
+		public int GetWaterfallStyleSlot<T>() where T : ModWaterfallStyle
+		{
+			return GetWaterfallStyleSlot(typeof(T).Name);
 		}
 
 		private void AutoloadWaterfallStyle(Type type)
@@ -2148,6 +2344,11 @@ namespace Terraria.ModLoader
 			{
 				return null;
 			}
+		}
+
+		public T GetGlobalRecipe<T>() where T : GlobalRecipe
+		{
+			return (T)GetGlobalRecipe(typeof(T).Name);
 		}
 
 		/// <summary>
@@ -2365,6 +2566,7 @@ namespace Terraria.ModLoader
 			items.Clear();
 			globalItems.Clear();
 			equipTextures.Clear();
+			equipTexturesLegacy.Clear();
 			dusts.Clear();
 			tiles.Clear();
 			globalTiles.Clear();

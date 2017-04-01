@@ -120,6 +120,7 @@
     <Compile Include="Items\ExampleHamaxe.cs" />
     <Compile Include="Items\ExampleHook.cs" />
     <Compile Include="Items\ExampleItem.cs" />
+    <Compile Include="Items\Placeable\ScoreBoard.cs" />
     <Compile Include="Items\Weapons\ExampleJavelin.cs" />
     <Compile Include="Items\ExampleLightPet.cs" />
     <Compile Include="Items\ExamplePet.cs" />
@@ -217,6 +218,7 @@
     <Compile Include="Projectiles\PuritySpirit\PuritySnake.cs" />
     <Compile Include="Projectiles\PuritySpirit\PuritySphere.cs" />
     <Compile Include="Projectiles\PuritySpirit\VoidWorld.cs" />
+    <Compile Include="Projectiles\ScorePoint.cs" />
     <Compile Include="Projectiles\ShadowArm.cs" />
     <Compile Include="Projectiles\SparklingBall.cs" />
     <Compile Include="Projectiles\Wisp.cs" />
@@ -236,6 +238,7 @@
     <Compile Include="Tiles\ExampleDoorClosed.cs" />
     <Compile Include="Tiles\ExampleDoorOpen.cs" />
     <Compile Include="Tiles\ExampleDresser.cs" />
+    <Compile Include="Tiles\ExampleGlobalTile.cs" />
     <Compile Include="Tiles\ExampleMusicBox.cs" />
     <Compile Include="Tiles\ExamplePlant.cs" />
     <Compile Include="Tiles\ExamplePlatform.cs" />
@@ -246,6 +249,7 @@
     <Compile Include="Tiles\ExampleWorkbench.cs" />
     <Compile Include="Tiles\MonsterBanner.cs" />
     <Compile Include="Tiles\TEElementalPurge.cs" />
+    <Compile Include="Tiles\TEScoreBoard.cs" />
     <Compile Include="Tiles\VoidMonolith.cs" />
     <Compile Include="Tiles\VoidSky.cs" />
     <Compile Include="UI\ExampleUI.cs" />

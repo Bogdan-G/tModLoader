@@ -28,6 +28,7 @@ namespace Terraria.ModLoader.UI
 		public UIModDownloadItem selectedItem;
 		private UIElement uIElement;
 		private UIPanel uIPanel;
+		private UILoaderAnimatedImage uILoader;
 		public UITextPanel<string> uIHeaderTextPanel;
 		internal UIInputTextField filterTextBox;
 		internal readonly List<UICycleImage> _categoryButtons = new List<UICycleImage>();
@@ -36,6 +37,7 @@ namespace Terraria.ModLoader.UI
 		public UICycleImage uIToggleImage;
 		public UICycleImage SearchFilterToggle;
 		public bool loading;
+		private bool needToRemoveLoading;
 		public SortMode sortMode = SortMode.RecentlyUpdated;
 		public UpdateFilter updateFilterMode = UpdateFilter.Available;
 		public SearchFilter searchFilterMode = SearchFilter.Name;
@@ -84,12 +86,16 @@ namespace Terraria.ModLoader.UI
 			uIElement.Top.Set(220f, 0f);
 			uIElement.Height.Set(-220f, 1f);
 			uIElement.HAlign = 0.5f;
+
 			uIPanel = new UIPanel();
 			uIPanel.Width.Set(0f, 1f);
 			uIPanel.Height.Set(-110f, 1f);
 			uIPanel.BackgroundColor = new Color(33, 43, 79) * 0.8f;
 			uIPanel.PaddingTop = 0f;
 			uIElement.Append(uIPanel);
+
+			uILoader = new UILoaderAnimatedImage(0.5f, 0.5f, 1f);
+
 			modListAll = new UIList();
 			modList = new UIList();
 			modList.Width.Set(-25f, 1f);
@@ -97,12 +103,14 @@ namespace Terraria.ModLoader.UI
 			modList.Top.Set(50f, 0f);
 			modList.ListPadding = 5f;
 			uIPanel.Append(modList);
+
 			UIScrollbar uIScrollbar = new UIScrollbar();
 			uIScrollbar.SetView(100f, 1000f);
 			uIScrollbar.Height.Set(-50f, 1f);
 			uIScrollbar.Top.Set(50f, 0f);
 			uIScrollbar.HAlign = 1f;
 			uIPanel.Append(uIScrollbar);
+
 			modList.SetScrollbar(uIScrollbar);
 			uIHeaderTextPanel = new UITextPanel<string>("Mod Browser", 0.8f, true);
 			uIHeaderTextPanel.HAlign = 0.5f;
@@ -110,6 +118,7 @@ namespace Terraria.ModLoader.UI
 			uIHeaderTextPanel.SetPadding(15f);
 			uIHeaderTextPanel.BackgroundColor = new Color(73, 94, 171);
 			uIElement.Append(uIHeaderTextPanel);
+
 			reloadButton = new UITextPanel<string>("Getting data...", 1f, false);
 			reloadButton.Width.Set(-10f, 0.5f);
 			reloadButton.Height.Set(25f, 0f);
@@ -119,6 +128,7 @@ namespace Terraria.ModLoader.UI
 			reloadButton.OnMouseOut += UICommon.FadedMouseOut;
 			reloadButton.OnClick += ReloadList;
 			uIElement.Append(reloadButton);
+
 			UITextPanel<string> backButton = new UITextPanel<string>("Back", 1f, false);
 			backButton.Width.Set(-10f, 0.5f);
 			backButton.Height.Set(25f, 0f);
@@ -145,7 +155,8 @@ namespace Terraria.ModLoader.UI
 				Interface.modBrowser.SortList();
 				Main.PlaySound(SoundID.MenuTick);
 			};
-			base.Append(uIElement);
+
+			Append(uIElement);
 
 			UIElement uIElement2 = new UIElement();
 			uIElement2.Width.Set(0f, 1f);
@@ -193,6 +204,7 @@ namespace Terraria.ModLoader.UI
 			filterTextBox.Left.Set(-150, 1f);
 			filterTextBox.OnTextChange += (sender, e) => SortList();
 			uIElement2.Append(filterTextBox);
+
 			SearchFilterToggle = new UICycleImage(texture, 2, 32, 32, 68, 0);
 			SearchFilterToggle.setCurrentState((int)searchFilterMode);
 			SearchFilterToggle.OnClick += (a, b) =>
@@ -214,6 +226,7 @@ namespace Terraria.ModLoader.UI
 		internal void SortList()
 		{
 			filter = filterTextBox.currentString;
+			needToRemoveLoading = true;
 			modList.Clear();
 			modList.AddRange(modListAll._items.Where(item => item.PassFilters()));
 			modList.UpdateOrder();
@@ -271,17 +284,21 @@ namespace Terraria.ModLoader.UI
 		{
 			Main.PlaySound(SoundID.MenuClose);
 			Main.menuMode = 0;
-			if (Interface.modBrowser.aModUpdated)
+			if (Interface.modBrowser.aModUpdated && !ModLoader.dontRemindModBrowserUpdateReload)
 			{
-				Interface.infoMessage.SetMessage("You have updated a mod. Remember to reload mods for it to take effect.");
-				Interface.infoMessage.SetGotoMenu(0);
-				Main.menuMode = Interface.infoMessageID;
+				Interface.advancedInfoMessage.SetMessage("You have updated a mod. Remember to reload mods for it to take effect.");
+				Interface.advancedInfoMessage.SetGotoMenu(0);
+				Interface.advancedInfoMessage.SetAltMessage("Don't show again");
+				Interface.advancedInfoMessage.SetAltAction(() => { ModLoader.dontRemindModBrowserUpdateReload = true; Main.SaveSettings(); });
+				Main.menuMode = Interface.advancedInfoMessageID;
 			}
-			else if (Interface.modBrowser.aNewModDownloaded)
+			else if (Interface.modBrowser.aNewModDownloaded && !ModLoader.dontRemindModBrowserDownloadEnable)
 			{
-				Interface.infoMessage.SetMessage("Your recently downloaded mods are currently disabled. Remember to enable and reload if you intend to use them.");
-				Interface.infoMessage.SetGotoMenu(0);
-				Main.menuMode = Interface.infoMessageID;
+				Interface.advancedInfoMessage.SetMessage("Your recently downloaded mods are currently disabled. Remember to enable and reload if you intend to use them.");
+				Interface.advancedInfoMessage.SetGotoMenu(0);
+				Interface.advancedInfoMessage.SetAltMessage("Don't show again");
+				Interface.advancedInfoMessage.SetAltAction(() => { ModLoader.dontRemindModBrowserDownloadEnable = true; Main.SaveSettings(); });
+				Main.menuMode = Interface.advancedInfoMessageID;
 			}
 			Interface.modBrowser.aModUpdated = false;
 			Interface.modBrowser.aNewModDownloaded = false;
@@ -293,6 +310,16 @@ namespace Terraria.ModLoader.UI
 			{
 				Main.PlaySound(SoundID.MenuOpen);
 				PopulateModBrowser();
+			}
+		}
+
+		public override void Update(GameTime gameTime)
+		{
+			// Due to collection modified exceptions, we need to do this here.
+			if (needToRemoveLoading)
+			{
+				if (uIPanel.HasChild(uILoader)) uIPanel.RemoveChild(uILoader);
+				needToRemoveLoading = false;
 			}
 		}
 
@@ -310,7 +337,10 @@ namespace Terraria.ModLoader.UI
 			SpecialModPackFilterTitle = null;
 			reloadButton.SetText("Getting data...");
 			SetHeading("Mod Browser");
+			if (!uIPanel.HasChild(uILoader)) uIPanel.Append(uILoader);
+			modList.Clear();
 			modListAll.Clear();
+			modList.Deactivate();
 			try
 			{
 				ServicePointManager.Expect100Continue = false;
@@ -414,6 +444,7 @@ namespace Terraria.ModLoader.UI
 				foreach (JObject mod in modlist.Children<JObject>())
 				{
 					string displayname = (string)mod["displayname"];
+					//reloadButton.SetText("Adding " + displayname + "...");
 					string name = (string)mod["name"];
 					string version = (string)mod["version"];
 					string author = (string)mod["author"];
